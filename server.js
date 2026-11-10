@@ -1,4 +1,4 @@
-// Group Chat Court: a jury of 12 Muse Ember agents settles your group chat argument.
+// Court of Petty Appeals: a jury of 12 Muse Ember agents settles your group chat argument.
 // Zero dependencies. Every call goes to meta/muse-ember through OpenRouter.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -52,7 +52,7 @@ const JUDGE_SCHEMA = {
 async function ember(messages, schema, max_tokens = 800) {
   const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
-    headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json', 'HTTP-Referer': 'https://github.com/tilentkalec/group-chat-court', 'X-Title': 'Group Chat Court' },
+    headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json', 'HTTP-Referer': 'https://github.com/tilentkalec/court-of-petty-appeals', 'X-Title': 'Court of Petty Appeals' },
     body: JSON.stringify({
       model: MODEL, messages, max_tokens, temperature: 0.9,
       reasoning: { effort: 'low' }, usage: { include: true },
@@ -124,4 +124,4 @@ http.createServer(async (req, res) => {
     }
     res.writeHead(404).end('not found');
   } catch (e) { res.writeHead(500).end(e.message); }
-}).listen(PORT, () => console.log(`Group Chat Court is in session: http://localhost:${PORT}  (model ${MODEL})`));
+}).listen(PORT, () => console.log(`Court of Petty Appeals is in session: http://localhost:${PORT}  (model ${MODEL})`));
