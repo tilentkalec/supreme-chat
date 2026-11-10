@@ -2,6 +2,8 @@
 
 Paste any group chat argument ("is a hot dog a sandwich?", "who pays for the Uber?"). A jury of 12 AI characters (Mom, a lawyer, a Gen Z intern, a conspiracy guy, a cat, a pirate...) argue it out in parallel and vote. Then the judge delivers a dramatic verdict and sentences the losing side.
 
+Demo video: [demo.mp4](demo.mp4)
+
 Built at the OpenRouter x Meta Build Day (SF, Nov 9 2026) for the **$1 Challenge**.
 
 ## How it works
