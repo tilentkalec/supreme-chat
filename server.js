@@ -1,4 +1,4 @@
-// Court of Petty Appeals: a jury of 12 Muse Ember agents settles your group chat argument.
+// Supreme Chat: a jury of 12 Muse Ember agents settles your group chat argument.
 // Zero dependencies. Every call goes to meta/muse-ember through OpenRouter.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -52,7 +52,7 @@ const JUDGE_SCHEMA = {
 async function ember(messages, schema, max_tokens = 800) {
   const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
-    headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json', 'HTTP-Referer': 'https://github.com/tilentkalec/court-of-petty-appeals', 'X-Title': 'Court of Petty Appeals' },
+    headers: { authorization: `Bearer ${KEY}`, 'content-type': 'application/json', 'HTTP-Referer': 'https://github.com/tilentkalec/supreme-chat', 'X-Title': 'Supreme Chat' },
     body: JSON.stringify({
       model: MODEL, messages, max_tokens, temperature: 0.9,
       reasoning: { effort: 'low' }, usage: { include: true },
@@ -82,7 +82,7 @@ async function trial(req, res) {
   try {
     if (!KEY) throw new Error('Add OPENROUTER_API_KEY to .env');
     const sides = await call([
-      { role: 'system', content: 'You are the clerk of the Court of Petty Appeals. Turn a group chat argument into a court case with two clear opposing sides.' },
+      { role: 'system', content: 'You are the clerk of Supreme Chat. Turn a group chat argument into a court case with two clear opposing sides.' },
       { role: 'user', content: dispute.slice(0, 2000) },
     ], SIDES_SCHEMA, 1500);
     send({ type: 'sides', ...sides, jurors: JURORS.map(({ name, emoji }) => ({ name, emoji })) });
@@ -91,7 +91,7 @@ async function trial(req, res) {
     await Promise.all(JURORS.map(async (j, i) => {
       try {
         const ask = () => call([
-          { role: 'system', content: `You are ${j.name}, ${j.persona}. You are a juror in the Court of Petty Appeals. Stay fully in character, be funny and opinionated, never neutral.` },
+          { role: 'system', content: `You are ${j.name}, ${j.persona}. You are a juror in Supreme Chat. Stay fully in character, be funny and opinionated, never neutral.` },
           { role: 'user', content: `Case: ${sides.case_name}\nThe argument: ${dispute.slice(0, 2000)}\n\nSide A: ${sides.a}\nSide B: ${sides.b}\n\nPick a side and argue it.` },
         ], VOTE_SCHEMA, 2000);
         let v = await ask();
@@ -106,7 +106,7 @@ async function trial(req, res) {
     const score = { A: valid.filter((v) => v.side === 'A').length, B: valid.filter((v) => v.side === 'B').length };
     send({ type: 'score', score });
     const judge = await call([
-      { role: 'system', content: 'You are the Honorable Judge of the Court of Petty Appeals: theatrical, dramatic, a little unhinged. The jury vote decides the winner unless it is a tie, then you decide.' },
+      { role: 'system', content: 'You are the Honorable Judge of Supreme Chat: theatrical, dramatic, a little unhinged. The jury vote decides the winner unless it is a tie, then you decide.' },
       { role: 'user', content: `Case: ${sides.case_name}\nSide A: ${sides.a}\nSide B: ${sides.b}\nJury vote: A ${score.A}, B ${score.B}\n\nJuror arguments:\n${valid.map((v) => `${v.name} (${v.side}): ${v.argument}`).join('\n')}\n\nDeliver the verdict.` },
     ], JUDGE_SCHEMA, 2500);
     if (score.A !== score.B) judge.winner = score.A > score.B ? 'A' : 'B';
@@ -124,4 +124,4 @@ http.createServer(async (req, res) => {
     }
     res.writeHead(404).end('not found');
   } catch (e) { res.writeHead(500).end(e.message); }
-}).listen(PORT, () => console.log(`Court of Petty Appeals is in session: http://localhost:${PORT}  (model ${MODEL})`));
+}).listen(PORT, () => console.log(`Supreme Chat is in session: http://localhost:${PORT}  (model ${MODEL})`));
