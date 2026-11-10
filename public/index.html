@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Group Chat Court</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .pop { animation: pop .35s ease-out both; }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
+  .wait { animation: pulse 1.2s ease-in-out infinite; } @keyframes pulse { 50% { opacity: .45; } }
+  .gavel { display: inline-block; animation: bang .6s ease-in-out infinite; transform-origin: 80% 80%; }
+  @keyframes bang { 50% { transform: rotate(-25deg); } }
+</style>
+</head>
+<body class="bg-[#f6f1e7] text-stone-900 min-h-screen">
+<div class="max-w-6xl mx-auto px-6 py-8">
+  <header class="text-center">
+    <h1 class="text-4xl md:text-5xl font-black tracking-tight">⚖️ Group Chat Court</h1>
+    <p class="text-stone-600 mt-2">Paste the argument. 12 AI jurors fight it out. The judge settles it forever.</p>
+    <p class="text-xs text-stone-400 mt-1">Every juror is a Meta Muse Ember agent via OpenRouter</p>
+  </header>
+
+  <section class="mt-6 bg-white rounded-2xl shadow-sm border border-stone-200 p-4">
+    <textarea id="dispute" rows="3" class="w-full text-lg outline-none resize-none" placeholder="e.g. Is a hot dog a sandwich? / Who pays for the Uber if I called it but you picked the restaurant?"></textarea>
+    <div class="flex flex-wrap gap-2 items-center mt-2">
+      <button data-ex="Is a hot dog a sandwich?" class="ex text-xs px-3 py-1 rounded-full bg-stone-100 hover:bg-stone-200">hot dog = sandwich?</button>
+      <button data-ex="Who pays for the Uber: the person who called it, or the person who picked the restaurant across town?" class="ex text-xs px-3 py-1 rounded-full bg-stone-100 hover:bg-stone-200">who pays for the Uber</button>
+      <button data-ex="Is it ok to reply 'k' to a long message from your best friend?" class="ex text-xs px-3 py-1 rounded-full bg-stone-100 hover:bg-stone-200">replying 'k'</button>
+      <button data-ex="Pineapple on pizza: crime or cuisine?" class="ex text-xs px-3 py-1 rounded-full bg-stone-100 hover:bg-stone-200">pineapple pizza</button>
+      <button id="go" class="ml-auto bg-stone-900 text-white rounded-xl px-6 py-2.5 font-bold hover:bg-stone-700">Start the trial</button>
+    </div>
+  </section>
+
+  <section id="case" class="hidden mt-6 text-center pop">
+    <p class="text-xs uppercase tracking-[.2em] text-stone-500">Now in session</p>
+    <h2 id="casename" class="text-2xl md:text-3xl font-black mt-1"></h2>
+    <div class="mt-4 grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
+      <div class="rounded-2xl bg-sky-100 border-2 border-sky-300 p-4"><p class="text-xs font-bold text-sky-700">SIDE A</p><p id="sa" class="font-semibold text-lg"></p><p id="ca" class="text-4xl font-black text-sky-700 mt-1 tabular-nums">0</p></div>
+      <p class="text-2xl font-black text-stone-400">vs</p>
+      <div class="rounded-2xl bg-rose-100 border-2 border-rose-300 p-4"><p class="text-xs font-bold text-rose-700">SIDE B</p><p id="sb" class="font-semibold text-lg"></p><p id="cb" class="text-4xl font-black text-rose-700 mt-1 tabular-nums">0</p></div>
+    </div>
+  </section>
+
+  <section id="jury" class="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-3"></section>
+  <section id="verdict" class="mt-6"></section>
+
+  <footer id="meter" class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+    <div class="bg-white rounded-xl border border-stone-200 p-3"><p class="text-xs text-stone-400">This trial cost</p><p id="m-cost" class="text-2xl font-black tabular-nums">$0.0000</p></div>
+    <div class="bg-white rounded-xl border border-stone-200 p-3"><p class="text-xs text-stone-400">Trials per $1</p><p id="m-per" class="text-2xl font-black tabular-nums text-emerald-600">-</p></div>
+    <div class="bg-white rounded-xl border border-stone-200 p-3"><p class="text-xs text-stone-400">Muse Ember calls · time</p><p id="m-calls" class="text-2xl font-black tabular-nums">0 · 0.0s</p></div>
+    <div class="bg-white rounded-xl border border-stone-200 p-3"><p class="text-xs text-stone-400">Same tokens on Claude Sonnet 5.5</p><p id="m-sonnet" class="text-2xl font-black tabular-nums text-stone-400">$0.000</p></div>
+  </footer>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+document.querySelectorAll('.ex').forEach((b) => b.onclick = () => { $('#dispute').value = b.dataset.ex; });
+
+let score = { A: 0, B: 0 };
+function meter(m) {
+  $('#m-cost').textContent = `$${m.cost.toFixed(4)}`;
+  $('#m-per').textContent = m.cost > 0 ? Math.floor(1 / m.cost).toLocaleString() : '-';
+  $('#m-calls').textContent = `${m.calls} · ${(m.ms / 1000).toFixed(1)}s`;
+  $('#m-sonnet').textContent = `$${m.sonnet.toFixed(3)}`;
+}
+
+$('#go').onclick = async () => {
+  const dispute = $('#dispute').value.trim();
+  if (!dispute) return $('#dispute').focus();
+  const btn = $('#go'); btn.disabled = true; btn.innerHTML = '<span class="gavel">🔨</span> Court in session…';
+  score = { A: 0, B: 0 }; $('#ca').textContent = 0; $('#cb').textContent = 0;
+  $('#case').classList.add('hidden'); $('#jury').innerHTML = ''; $('#verdict').innerHTML = '';
+  meter({ cost: 0, calls: 0, ms: 0, sonnet: 0 });
+
+  const r = await fetch('/api/trial', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ dispute }) });
+  const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read(); if (done) break;
+    buf += dec.decode(value, { stream: true }); let i;
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, i); buf = buf.slice(i + 1); if (!line.trim()) continue;
+      const e = JSON.parse(line);
+      if (e.type === 'meter') meter(e);
+      if (e.type === 'error') $('#verdict').innerHTML = `<p class="text-center text-red-600">${esc(e.error)}</p>`;
+      if (e.type === 'sides') {
+        $('#casename').textContent = e.case_name; $('#sa').textContent = e.a; $('#sb').textContent = e.b;
+        $('#case').classList.remove('hidden');
+        $('#jury').innerHTML = e.jurors.map((j, k) => `<div id="j${k}" class="bg-white rounded-2xl border border-stone-200 p-4 wait">
+          <p class="font-bold">${j.emoji} ${esc(j.name)}</p><p class="text-sm text-stone-400 mt-1">deliberating…</p></div>`).join('');
+      }
+      if (e.type === 'vote') {
+        const el = $(`#j${e.i}`); if (!el) continue;
+        if (e.error) { el.classList.remove('wait'); el.querySelector('p:last-child').textContent = 'fell asleep in court'; continue; }
+        const v = e.vote, a = v.side === 'A';
+        score[v.side]++; $('#ca').textContent = score.A; $('#cb').textContent = score.B;
+        el.className = `rounded-2xl border-2 p-4 pop ${a ? 'bg-sky-50 border-sky-300' : 'bg-rose-50 border-rose-300'}`;
+        el.innerHTML = `<div class="flex justify-between items-start"><p class="font-bold">${v.emoji} ${esc(v.name)}</p>
+          <span class="text-xs font-black px-2 py-0.5 rounded-full ${a ? 'bg-sky-200 text-sky-800' : 'bg-rose-200 text-rose-800'}">SIDE ${v.side}</span></div>
+          <p class="text-sm mt-2">"${esc(v.argument)}"</p><p class="text-xs text-stone-400 mt-2">confidence ${'█'.repeat(Math.max(1, Math.min(10, v.confidence)))}</p>`;
+      }
+      if (e.type === 'score') $('#verdict').innerHTML = `<p class="text-center text-stone-500 wait">👨‍⚖️ The judge is writing the verdict…</p>`;
+      if (e.type === 'verdict') {
+        const a = e.winner === 'A', side = a ? $('#sa').textContent : $('#sb').textContent;
+        $('#verdict').innerHTML = `<div class="pop rounded-3xl bg-stone-900 text-white p-6 md:p-8 text-center">
+          <p class="text-xs uppercase tracking-[.25em] text-stone-400">The verdict · ${e.score.A} to ${e.score.B}</p>
+          <p class="text-3xl md:text-4xl font-black mt-2 ${a ? 'text-sky-300' : 'text-rose-300'}">🔨 ${esc(side)}</p>
+          <p class="mt-4 text-lg text-stone-200 max-w-3xl mx-auto">${esc(e.verdict)}</p>
+          <p class="mt-4 text-sm text-amber-300">Sentence for the losing side: ${esc(e.sentence)}</p></div>`;
+      }
+    }
+  }
+  btn.disabled = false; btn.textContent = 'Start the trial';
+};
+$('#dispute').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('#go').click(); });
+</script>
+</body>
+</html>
